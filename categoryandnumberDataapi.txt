@@ -1,0 +1,29 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+import joblib
+import numpy as np
+
+# Load the trained model and label encoder
+model = joblib.load('linear_regression_model.pkl')
+label_encoder = joblib.load('label_encoder.pkl')
+
+app = FastAPI()
+
+# Define the input data format for FastAPI
+class InputData(BaseModel):
+    input1: str  # Categorical input
+    input2: float  # Numerical input
+
+# Define the prediction endpoint
+@app.post("/predict/")
+async def predict(data: InputData):
+    # Encode the categorical input using the same encoder
+    input1_encoded = label_encoder.transform([data.input1])  # Encode the categorical input
+    
+    # Combine with numerical input
+    features = np.array([[input1_encoded[0], data.input2]])  # Make sure to use the correct shape
+    
+    # Predict using the trained model
+    prediction = model.predict(features)
+    
+    return {"predicted_target": prediction[0]}
